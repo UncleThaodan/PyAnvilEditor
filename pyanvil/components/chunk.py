@@ -1,12 +1,12 @@
-from typing import BinaryIO
-from ..coordinate import AbsoluteCoordinate, ChunkCoordinate
-
-from .component_base import ComponentBase
-from . import ChunkSection, Sizes, Block, Biome
-from . import CompoundTag, ListTag
-from ..utility.nbt import NBT
-from ..stream import InputStream, OutputStream
 import zlib
+from typing import BinaryIO
+
+from ..coordinate import AbsoluteCoordinate, ChunkCoordinate
+from ..stream import InputStream, OutputStream
+from ..utility.nbt import NBT
+from . import Biome, Block, ChunkSection, Sizes
+from . import CompoundTag, ListTag
+from .component_base import ComponentBase
 
 
 class Chunk(ComponentBase):
@@ -20,6 +20,9 @@ class Chunk(ComponentBase):
         self.__index = Chunk.to_region_chunk_index(coord)
         for section in self.sections.values():
             section.set_parent(self)
+
+    def __str__(self):
+        return f'[Chunk] {{x: {str(self.coordinate.x)}, z: {str(self.coordinate.z)}}}'
 
     def set_parent_region(self, region: 'Region'):
         self._parent = region
@@ -110,6 +113,3 @@ class Chunk(ComponentBase):
         new_nbt.get('Level').add_child(new_sections)
 
         return new_nbt
-
-    def __str__(self):
-        return f'Chunk({str(self.coordinate.x)},{str(self.coordinate.z)})'

@@ -5,7 +5,7 @@ class BlockState:
         self.id: int = None
 
     def __str__(self):
-        return f'BlockState({self.name}, {str(self.props)})'
+        return f'[BlockState] {{id: {self.name}, properties: {self.props}}}'
 
     def __hash__(self):
         return hash(self.name)

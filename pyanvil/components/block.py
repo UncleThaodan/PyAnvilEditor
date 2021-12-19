@@ -10,7 +10,7 @@ class Block(ComponentBase):
         self.sky_light: int = sky_light
 
     def __str__(self):
-        return f'Block({str(self._state)}, {self.block_light}, {self.sky_light})'
+        return f'[Block] {{state: {str(self._state)}, block_light: {self.block_light}, sky_light: {self.sky_light}}}'
 
     def set_state(self, state):
         self._dirty = True

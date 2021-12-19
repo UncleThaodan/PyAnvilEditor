@@ -8,8 +8,7 @@ from .components import Chunk, Block
 
 
 class World:
-    def __init__(self, world_folder, save_location=None, debug=False, read=True, write=True):
-        self.debug = debug
+    def __init__(self, world_folder, save_location=None, read=True, write=True):
         self.world_folder = self.__resolve_world_folder(world_folder=world_folder, save_location=save_location)
         self.regions: dict[RegionCoordinate, Region] = dict()
 

@@ -1,3 +1,4 @@
+import logging
 from abc import ABC
 
 
@@ -13,6 +14,7 @@ class ComponentBase(ABC):
         return self._is_dirty
 
     def mark_as_dirty(self):
+        logging.debug(f'{self} marked as dirty.')
         self._is_dirty = True
         if self._parent is not None:
             self._parent.mark_child_as_dirty(self)

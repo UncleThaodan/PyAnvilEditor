@@ -1,10 +1,10 @@
+import logging
 import math
 import sys
 from io import FileIO
 from pathlib import Path
 from time import time
 from typing import BinaryIO, Union
-import logging
 
 from ..coordinate import ChunkCoordinate
 from . import Chunk
@@ -32,6 +32,9 @@ class Region(ComponentBase):
         self.__raw_chunk_data: dict[int, bytes] = {}
 
         self.__load_from_file()
+
+    def __str__(self):
+        return f'[Region] {{file: "{self.file_path}", loaded_chunks: {len(self.chunks)}}}'
 
     def __enter__(self) -> 'Region':
         return self
@@ -83,8 +86,8 @@ class Region(ComponentBase):
             loc = self.__chunk_locations[index]
             original_sector_length = loc[1]
             data_len_diff = block_data_len - original_sector_length
-            if data_len_diff != 0 and self.debug:
-                print(f'Danger: Diff is {data_len_diff}, shifting required!')
+            if data_len_diff != 0:
+                logging.debug(f'Danger: Diff is {data_len_diff}, shifting required!')
 
             self.__chunk_locations[index][1] = block_data_len
 
@@ -99,7 +102,7 @@ class Region(ComponentBase):
 
             header_length = 2 * 4096
             rest_of_the_data[(loc[0] - header_length):(loc[0] + original_sector_length - header_length)] = data
-            logging.debug(f'Saving {chunk} with', {'loc': loc, 'new_len': datalen, 'old_len': chunk.orig_size, 'sector_len': block_data_len})
+            logging.debug(f'Saving {chunk} with loc: {loc} new_len: {datalen} old_len: {chunk.orig_size} sector_len: {block_data_len}')
 
         # rewrite entire file with new chunks and locations recorded
         self.file.seek(0)

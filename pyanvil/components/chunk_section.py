@@ -1,4 +1,5 @@
 import math
+
 from .component_base import ComponentBase
 from . import Block, BlockState, Sizes
 from . import ByteArrayTag, ByteTag, CompoundTag, StringTag, LongArrayTag, LongTag, ListTag
@@ -14,6 +15,9 @@ class ChunkSection(ComponentBase):
 
         self.raw_section = raw_section
         self.y_index = y_index
+
+    def __str__(self):
+        return f'[Section] {{index: {self.y_index}}}'
 
     def get_block(self, block_pos):
         x = block_pos[0]

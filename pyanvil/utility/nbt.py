@@ -1,6 +1,7 @@
-from abc import ABC, abstractmethod
 import struct
+from abc import ABC, abstractmethod
 from enum import IntEnum
+
 from ..stream import InputStream, OutputStream
 
 
