@@ -74,7 +74,7 @@ class Biome:
     modified_badlands_plateau = 'modified_badlands_plateau'
 
     @staticmethod
-    def from_index(i):
+    def from_index(i):  # TODO: Somehow fetch biome list based on version
         if i < len(Biome.biome_list):
             return Biome.biome_list[i]
         return i  # Otherwise it's a mod biome with unknown name, so just return the index.

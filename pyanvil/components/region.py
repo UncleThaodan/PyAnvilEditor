@@ -5,11 +5,18 @@ from io import FileIO
 from pathlib import Path
 from time import time
 from typing import BinaryIO, Union
+from dataclasses import dataclass
 
 from ..coordinate import ChunkCoordinate
 from . import Chunk
 from .component_base import ComponentBase
 from .constants import Sizes
+
+
+@dataclass
+class ChunkLocation:
+    offset: int
+    size: int
 
 
 class Region(ComponentBase):
@@ -21,7 +28,7 @@ class Region(ComponentBase):
 
         # locations and timestamps are parallel lists.
         # Indexes in one can be accessed in the other as well.
-        self.__chunk_locations: list[list[int]] = None
+        self.__chunk_locations: list[ChunkLocation] = None
         self.__timestamps: list[int] = None
 
         # Uninterpreted raw data
@@ -57,9 +64,9 @@ class Region(ComponentBase):
             self.file = open(self.file_path, mode='r+b')
 
     def __read_chunks_to_memory(self):
-        for offset, size in self.chunk_locations:
-            self.file.seek(offset)
-            self.__raw_chunk_data[offset] = self.file.read(size)
+        for loc in self.chunk_locations:
+            self.file.seek(loc.offset)
+            self.__raw_chunk_data[loc.offset] = self.file.read(loc.size)
 
     def save(self):
         self.__ensure_file_open()
@@ -84,24 +91,24 @@ class Region(ComponentBase):
             data += (0).to_bytes(block_data_len - (datalen + 5), byteorder='big', signed=False)
 
             loc = self.__chunk_locations[index]
-            original_sector_length = loc[1]
+            original_sector_length = loc.size
             data_len_diff = block_data_len - original_sector_length
             if data_len_diff != 0:
                 logging.debug(f'Danger: Diff is {data_len_diff}, shifting required!')
 
-            self.__chunk_locations[index][1] = block_data_len
+            self.__chunk_locations[index].size = block_data_len
 
-            if loc[0] == 0 or loc[1] == 0:
+            if loc.offset == 0 or loc.size == 0:
                 print('Chunk not generated', chunk)
                 sys.exit(0)
 
             # Adjust sectors after this one that need their locations recalculated
             for i, other_loc in enumerate(self.__chunk_locations):
-                if other_loc[0] > loc[0]:
-                    self.__chunk_locations[i][0] = other_loc[0] + data_len_diff
+                if other_loc.offset > loc.offset:
+                    self.__chunk_locations[i].offset = other_loc.offset + data_len_diff
 
             header_length = 2 * 4096
-            rest_of_the_data[(loc[0] - header_length):(loc[0] + original_sector_length - header_length)] = data
+            rest_of_the_data[(loc.offset - header_length):(loc.offset + original_sector_length - header_length)] = data
             logging.debug(f'Saving {chunk} with loc: {loc} new_len: {datalen} old_len: {chunk.orig_size} sector_len: {block_data_len}')
 
         # rewrite entire file with new chunks and locations recorded
@@ -115,11 +122,12 @@ class Region(ComponentBase):
         self.file.write((0).to_bytes(required_padding, byteorder='big', signed=False))
 
         self._is_dirty = False
+        logging.info(f'{self} Saved to disk')
 
     def __write_header(self, file: BinaryIO):
         for c_loc in self.__chunk_locations:
-            file.write(int(c_loc[0] / 4096).to_bytes(3, byteorder='big', signed=False))
-            file.write(int(c_loc[1] / 4096).to_bytes(1, byteorder='big', signed=False))
+            file.write(int(c_loc.offset / 4096).to_bytes(3, byteorder='big', signed=False))
+            file.write(int(c_loc.size / 4096).to_bytes(1, byteorder='big', signed=False))
 
         for ts in self.timestamps:
             file.write(ts.to_bytes(4, byteorder='big', signed=False))
@@ -129,8 +137,8 @@ class Region(ComponentBase):
         print(f'Loading {coord.x}x {coord.z}z from {self.file_path}')
         if not chunk_index in self.chunks:
             self.__ensure_file_open()
-            offset, sections = self.chunk_locations[chunk_index]
-            chunk = Chunk.from_file(file=self.file, offset=offset, sections=sections, parent_region=self)
+            loc = self.chunk_locations[chunk_index]
+            chunk = Chunk.from_file(file=self.file, offset=loc.offset, reserved_size=loc.size, parent_region=self)
             self.chunks[chunk_index] = chunk
             return chunk
         else:
@@ -142,15 +150,15 @@ class Region(ComponentBase):
         return bytearray(self.file.read())
 
     @property
-    def chunk_locations(self) -> list[list[int]]:
+    def chunk_locations(self) -> list[ChunkLocation]:
         if self.__chunk_locations is None:
             # Interpret header chunk
             self.__chunk_locations = [
                 # Nested list containing 2 elements, one taking 3 bytes, one with 1 byte
-                [
-                    int.from_bytes(offset, byteorder='big', signed=False) * Sizes.CHUNK_SECTOR_SIZE,
-                    size * Sizes.CHUNK_SECTOR_SIZE
-                ]
+                ChunkLocation(
+                    offset=int.from_bytes(offset, byteorder='big', signed=False) * Sizes.CHUNK_SECTOR_SIZE,
+                    size=size * Sizes.CHUNK_SECTOR_SIZE
+                )
                 for (*offset, size) in Region.iterate_in_groups(
                     self.__chunk_location_data, group_size=4, start=0, end=4 * 1024
                 )

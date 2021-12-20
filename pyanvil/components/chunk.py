@@ -28,7 +28,7 @@ class Chunk(ComponentBase):
         self._parent = region
 
     @staticmethod
-    def from_file(file: BinaryIO, offset: int, sections: int, parent_region: 'Region' = None) -> 'Chunk':
+    def from_file(file: BinaryIO, offset: int, reserved_size: int, parent_region: 'Region' = None) -> 'Chunk':
         file.seek(offset)
         datalen = int.from_bytes(file.read(4), byteorder="big", signed=False)
         file.read(1)  # Compression scheme
