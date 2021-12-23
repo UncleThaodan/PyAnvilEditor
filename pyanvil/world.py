@@ -5,19 +5,27 @@ from .components.region import Region
 from .coordinate import AbsoluteCoordinate, ChunkCoordinate, RegionCoordinate
 from .canvas import Canvas
 from .components import Chunk, Block
+from .utility.nbt import NBT
+from .stream import InputStream
+import gzip
 
 
 class World:
-    def __init__(self, world_folder, save_location=None, read=True, write=True):
-        self.world_folder = self.__resolve_world_folder(world_folder=world_folder, save_location=save_location)
+    def __init__(self, world_folder, read=True, write=True):
+        self.world_folder: Path = self.__resolve_world_folder(world_folder=world_folder)
         self.regions: dict[RegionCoordinate, Region] = dict()
 
-    def __resolve_world_folder(self, world_folder: Union[str, Path], save_location: Union[str, Path]):
-        folder = Path()
-        if save_location is not None:
-            folder = Path(save_location) / world_folder
-        else:
-            folder = Path(world_folder)
+        self.__level_dat_data = World.__read_level_file(self.world_folder)
+
+    @staticmethod
+    def __read_level_file(world_folder: Path):
+        with open(world_folder / 'level.dat', 'r+b') as file:
+            data = gzip.decompress(file.read())
+            stream = InputStream(data)
+            return NBT.parse_nbt(stream)
+
+    def __resolve_world_folder(self, world_folder: Union[str, Path]) -> Path:
+        folder = Path(world_folder)
         if not folder.is_dir():
             raise FileNotFoundError(f'No such folder \"{folder}\"')
         return folder
