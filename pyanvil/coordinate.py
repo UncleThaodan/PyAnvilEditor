@@ -11,6 +11,10 @@ class Coordinate(ABC):
         return hash((self.x, self.z))
 
     @abstractmethod
+    def __str__(self):
+        pass
+
+    @abstractmethod
     def to_absolute_coordinate(self) -> 'AbsoluteCoordinate':
         pass
 
@@ -28,6 +32,9 @@ class AbsoluteCoordinate(Coordinate):
         super().__init__(x=x, z=z)
         self.y: int = y
 
+    def __str__(self):
+        return f'(Abs: {self.x}, {self.y}, {self.z})'
+
     def __hash__(self) -> int:
         return hash((self.x, self.y, self.z))
 
@@ -44,6 +51,9 @@ class AbsoluteCoordinate(Coordinate):
 class ChunkCoordinate(Coordinate):
     def __init__(self, x: int = 0, z: int = 0):
         super().__init__(x=x, z=z)
+    
+    def __str__(self):
+        return f'(Chk: {self.x}, {self.z})'
 
     def __hash__(self) -> int:
         return hash((self.x, self.z))
@@ -62,6 +72,9 @@ class RelativeChunkCoordinate(ChunkCoordinate):
     def __init__(self, x: int = 0, z: int = 0):
         super().__init__(x=x, z=z)
 
+    def __str__(self):
+        return f'(RelChk: {self.x}, {self.z})'
+
     def __hash__(self) -> int:
         return hash((self.x, self.z))
 
@@ -69,6 +82,9 @@ class RelativeChunkCoordinate(ChunkCoordinate):
 class RegionCoordinate(Coordinate):
     def __init__(self, x: int = 0, z: int = 0):
         super().__init__(x=x, z=z)
+
+    def __str__(self):
+        return f'(Reg: {self.x}, {self.z})'
 
     def __hash__(self) -> int:
         return hash((self.x, self.z))

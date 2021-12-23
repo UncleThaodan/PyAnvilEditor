@@ -99,7 +99,7 @@ class Region(ComponentBase):
             self.__chunk_locations[index].size = block_data_len
 
             if loc.offset == 0 or loc.size == 0:
-                print('Chunk not generated', chunk)
+                logging.error(f'Chunk {chunk} not generated')
                 sys.exit(0)
 
             # Adjust sectors after this one that need their locations recalculated
@@ -134,12 +134,13 @@ class Region(ComponentBase):
 
     def get_chunk(self, coord: ChunkCoordinate):
         chunk_index = Chunk.to_region_chunk_index(coord)
-        print(f'Loading {coord.x}x {coord.z}z from {self.file_path}')
         if not chunk_index in self.chunks:
+            logging.debug(f'Chunk {coord} not in memory. Loading...')
             self.__ensure_file_open()
             loc = self.chunk_locations[chunk_index]
             chunk = Chunk.from_file(file=self.file, offset=loc.offset, reserved_size=loc.size, parent_region=self)
             self.chunks[chunk_index] = chunk
+            logging.debug(f'Chunk {coord} loaded.')
             return chunk
         else:
             return self.chunks[chunk_index]

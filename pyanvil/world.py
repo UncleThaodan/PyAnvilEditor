@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 from pathlib import Path
 
@@ -62,7 +63,9 @@ class World:
         return Canvas(self)
 
     def _load_region(self, coord: RegionCoordinate):
+        logging.debug(f'Region {coord} not in memory. Loading...')
         name = RegionCoordinate.to_region_file_name(coord)
         region = Region(self.world_folder / 'region' / name)
         self.regions[coord] = region
+        logging.debug(f'Region {coord} loaded.')
         return region

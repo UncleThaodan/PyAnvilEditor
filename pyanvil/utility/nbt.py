@@ -26,6 +26,13 @@ class BaseNBTTag(ABC):
     def serialize(self, stream: OutputStream, include_name=True):
         pass
 
+    def __init__(self, tag_name: str):
+        self._tag_name: str = tag_name
+
+    @property
+    def name(self):
+        return self._tag_name
+
 
 class NBT:
 
@@ -52,7 +59,7 @@ class NBT:
             clazz_id = tag_id
 
             @classmethod
-            def parse(cls, stream, name):
+            def parse(cls: type, stream: InputStream, name: str):
                 return cls(
                     tag_value=struct.unpack(
                         cls.clazz_parser,
@@ -62,8 +69,8 @@ class NBT:
                 )
 
             def __init__(self, tag_value, tag_name='None'):
+                super().__init__(tag_name=tag_name)
                 int(tag_value)
-                self.tag_name = tag_name
                 self.tag_value = tag_value
 
             def print(self, indent=''):
@@ -72,24 +79,21 @@ class NBT:
             def get(self):
                 return self.tag_value
 
-            def name(self):
-                return self.tag_name
-
             def serialize(self, stream, include_name=True):
                 if include_name:
                     stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
-                    NBT.write_string(stream, self.tag_name)
+                    NBT.write_string(stream, self.name)
 
                 stream.write(struct.pack(type(self).clazz_parser, self.tag_value))
 
             def clone(self):
-                return type(self)(self.tag_value, tag_name=self.tag_name)
+                return type(self)(self.tag_value, tag_name=self.name)
 
             def __repr__(self):
-                return f'{type(self).clazz_name}Tag \'{self.tag_name}\' = {str(self.tag_value)}'
+                return f'{type(self).clazz_name}Tag \'{self.name}\' = {str(self.tag_value)}'
 
             def __eq__(self, other):
-                return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+                return self.name == other.name and self.tag_value == other.tag_value
 
         NBT.register_parser(tag_id, DataNBTTag)
 
@@ -102,41 +106,38 @@ class NBT:
             clazz_id = tag_id
 
             @classmethod
-            def parse(cls, stream, name):
+            def parse(cls: type, stream: InputStream, name: str):
                 payload_length = int.from_bytes(stream.read(2), byteorder='big', signed=False)
                 payload = stream.read(payload_length).decode('utf-8')
                 return cls(payload, tag_name=name)
 
             def __init__(self, tag_value, tag_name='None'):
-                self.tag_name = tag_name
+                super().__init__(tag_name=tag_name)
                 self.tag_value = tag_value
 
             def print(self, indent=''):
-                print(indent + 'String: ' + self.tag_name + ' = ' + str(self.tag_value))
+                print(indent + 'String: ' + self.name + ' = ' + str(self.tag_value))
 
             def get(self):
                 return self.tag_value
 
-            def name(self):
-                return self.tag_name
-
             def serialize(self, stream, include_name=True):
                 if include_name:
                     stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
-                    NBT.write_string(stream, self.tag_name)
+                    NBT.write_string(stream, self.name)
 
                 stream.write(len(self.tag_value).to_bytes(2, byteorder='big', signed=False))
                 for c in self.tag_value:
                     stream.write(ord(c).to_bytes(1, byteorder='big', signed=False))
 
             def clone(self):
-                return type(self)(self.tag_value, tag_name=self.tag_name)
+                return type(self)(self.tag_value, tag_name=self.name)
 
             def __repr__(self):
-                return f'StringTag: {self.tag_name} = \'{self.tag_value}\''
+                return f'StringTag: {self.name} = \'{self.tag_value}\''
 
             def __eq__(self, other):
-                return self.tag_name == other.tag_name and self.tag_value == other.tag_value
+                return self.name == other.name and self.tag_value == other.tag_value
 
         NBT.register_parser(tag_id, DataNBTTag)
 
@@ -151,7 +152,7 @@ class NBT:
             clazz_id = tag_id
 
             @classmethod
-            def parse(cls, stream, name):
+            def parse(cls: type, stream: InputStream, name: str):
                 payload_length = int.from_bytes(stream.read(4), byteorder='big', signed=True)
                 tag = cls(tag_name=name)
                 for i in range(payload_length):
@@ -159,18 +160,15 @@ class NBT:
                 return tag
 
             def __init__(self, tag_name='None', children=[]):
-                self.tag_name = tag_name
+                super().__init__(tag_name=tag_name)
                 self.children = children[:]
 
             def add_child(self, tag):
                 self.children.append(tag)
 
-            def name(self):
-                return self.tag_name
-
             def print(self, indent=''):
                 str_dat = ', '.join([str(c.get()) for c in self.children])
-                print(f'{indent}{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]')
+                print(f'{indent}{type(self).clazz_name}: {self.name} size {str(len(self.children))} = [{str_dat}]')
 
             def get(self):
                 return [int(c.get()) for c in self.children]
@@ -178,7 +176,7 @@ class NBT:
             def serialize(self, stream, include_name=True):
                 if include_name:
                     stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
-                    NBT.write_string(stream, self.tag_name)
+                    NBT.write_string(stream, self.name)
 
                 stream.write(len(self.children).to_bytes(4, byteorder='big', signed=True))
 
@@ -186,14 +184,14 @@ class NBT:
                     tag.serialize(stream, include_name=False)
 
             def clone(self):
-                return type(self)(tag_name=self.tag_name, children=[c.clone() for c in self.children])
+                return type(self)(tag_name=self.name, children=[c.clone() for c in self.children])
 
             def __repr__(self):
                 str_dat = ', '.join([str(c.get()) for c in self.children])
-                return f'{type(self).clazz_name}: {self.tag_name} size {str(len(self.children))} = [{str_dat}]'
+                return f'{type(self).clazz_name}: {self.name} size {str(len(self.children))} = [{str_dat}]'
 
             def __eq__(self, other):
-                return self.tag_name == other.tag_name and \
+                return self.name == other.name and \
                     len(self.children) == len(other.children) and \
                     not any([not self.children[i] == other.children[i] for i in range(len(self.children))])
 
@@ -208,7 +206,7 @@ class NBT:
             clazz_id = tag_id
 
             @classmethod
-            def parse(cls, stream, name):
+            def parse(cls: type, stream: InputStream, name: str):
                 sub_type = int.from_bytes(stream.read(1), byteorder='big', signed=False)
                 payload_length = int.from_bytes(stream.read(4), byteorder='big', signed=True)
                 tag = cls(sub_type, tag_name=name)
@@ -217,7 +215,7 @@ class NBT:
                 return tag
 
             def __init__(self, sub_type_id, tag_name='None', children=[]):
-                self.tag_name = tag_name
+                super().__init__(tag_name=tag_name)
                 self.sub_type_id = sub_type_id
                 self.children = children[:]
 
@@ -227,18 +225,15 @@ class NBT:
             def get(self):
                 return [c.get() for c in self.children]
 
-            def name(self):
-                return self.tag_name
-
             def print(self, indent=''):
-                print(indent + 'List: ' + self.tag_name + ' size ' + str(len(self.children)))
+                print(indent + 'List: ' + self.name + ' size ' + str(len(self.children)))
                 for c in self.children:
                     c.print(indent + '  ')
 
             def serialize(self, stream, include_name=True):
                 if include_name:
                     stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
-                    NBT.write_string(stream, self.tag_name)
+                    NBT.write_string(stream, self.name)
 
                 stream.write(self.sub_type_id.to_bytes(1, byteorder='big', signed=False))
                 stream.write(len(self.children).to_bytes(4, byteorder='big', signed=True))
@@ -247,14 +242,14 @@ class NBT:
                     tag.serialize(stream, include_name=False)
 
             def clone(self):
-                return type(self)(self.sub_type_id, tag_name=self.tag_name, children=[c.clone() for c in self.children])
+                return type(self)(self.sub_type_id, tag_name=self.name, children=[c.clone() for c in self.children])
 
             def __repr__(self):
                 str_dat = ', '.join([c.__repr__() for c in self.children])
-                return f'ListTag: {self.tag_name} size {str(len(self.children))} = [{str_dat}]'
+                return f'ListTag: {self.name} size {str(len(self.children))} = [{str_dat}]'
 
             def __eq__(self, other):
-                return self.tag_name == other.tag_name and \
+                return self.name == other.name and \
                     len(self.children) == len(other.children) and \
                     (len(self.children) == 0 or not any([not self.children[i] == other.children[i] for i in range(len(self.children))]))
 
@@ -269,7 +264,7 @@ class NBT:
             clazz_id = tag_id
 
             @classmethod
-            def parse(cls, stream, name):
+            def parse(cls: type, stream: InputStream, name: str):
                 tag = cls(tag_name=name)
                 while stream.peek() != 0:  # end tag
                     tag.add_child(NBT.parse_nbt(stream))
@@ -277,20 +272,17 @@ class NBT:
                 return tag
 
             def __init__(self, tag_name='None', children=[]):
-                self.tag_name = tag_name
-                self.children = {c.tag_name: c for c in children[:]}
+                super().__init__(tag_name=tag_name)
+                self.children = {c.name: c for c in children[:]}
 
             def add_child(self, tag):
-                self.children[tag.tag_name] = tag
+                self.children[tag.name] = tag
 
             def get(self, name):
                 return self.children[name]
 
             # def get(self):
             #     return { n: v.get() for n, v in self.children }
-
-            def name(self):
-                return self.tag_name
 
             def has(self, name):
                 return name in self.children
@@ -302,14 +294,14 @@ class NBT:
                 return nd
 
             def print(self, indent=''):
-                print(indent + 'Compound: ' + self.tag_name + ' size ' + str(len(self.children)))
+                print(indent + 'Compound: ' + self.name + ' size ' + str(len(self.children)))
                 for c in self.children:
                     self.children[c].print(indent + '  ')
 
             def serialize(self, stream, include_name=True):
                 if include_name:
                     stream.write(type(self).clazz_id.to_bytes(1, byteorder='big', signed=False))
-                    NBT.write_string(stream, self.tag_name)
+                    NBT.write_string(stream, self.name)
 
                 for tag_name in self.children:
                     self.children[tag_name].serialize(stream, include_name=True)
@@ -317,11 +309,11 @@ class NBT:
                 stream.write((0).to_bytes(1, byteorder='big', signed=False))
 
             def clone(self):
-                return type(self)(tag_name=self.tag_name, children=[v.clone() for k, v in self.children.items()])
+                return type(self)(tag_name=self.name, children=[v.clone() for k, v in self.children.items()])
 
             def __repr__(self):
                 str_dat = ', '.join([c.__repr__() for name, c in self.children.items()])
-                return f'CompundTag: {self.tag_name} size {str(len(self.children))} = {{{str_dat}}}]'
+                return f'CompundTag: {self.name} size {str(len(self.children))} = {{{str_dat}}}]'
 
             def __eq__(self, other):
                 passed = True
@@ -330,7 +322,7 @@ class NBT:
                         passed = False
                     elif other.children[name] != v:
                         passed = False
-                return self.tag_name == other.tag_name and \
+                return self.name == other.name and \
                     len(self.children) == len(other.children) and \
                     passed
 
