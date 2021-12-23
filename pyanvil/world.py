@@ -39,7 +39,7 @@ class World:
                 region.save()
 
     def get_block(self, coordinate: AbsoluteCoordinate) -> Block:
-        self._get_region_file_name(coordinate.to_region_coordinate())
+        RegionCoordinate.to_region_file_name(coordinate.to_region_coordinate())
         chunk = self.get_chunk(coordinate.to_chunk_coordinate())
         return chunk.get_block(coordinate)
 
@@ -54,10 +54,7 @@ class World:
         return Canvas(self)
 
     def _load_region(self, coord: RegionCoordinate):
-        name = self._get_region_file_name(coord)
+        name = RegionCoordinate.to_region_file_name(coord)
         region = Region(self.world_folder / 'region' / name)
         self.regions[coord] = region
         return region
-
-    def _get_region_file_name(self, region: RegionCoordinate):
-        return f'r.{region.x}.{region.z}.mca'

@@ -81,3 +81,15 @@ class RegionCoordinate(Coordinate):
 
     def to_region_coordinate(self) -> 'RegionCoordinate':
         return self
+
+    def to_region_file_name(self) -> 'str':
+        return f'r.{self.x}.{self.z}.mca'
+
+    @staticmethod
+    def from_region_file_name(file_name: str) -> 'RegionCoordinate':
+        from pathlib import Path
+        path: Path = Path(file_name)
+        if not path.name.endswith('.mca'):
+            raise Exception(f'File name {file_name} is not a valid region file')
+        parts = path.stem.split('.')
+        return RegionCoordinate(x=int(parts[1]), z=int(parts[2]))
